@@ -1,34 +1,51 @@
 package com.bookstore.modules.cart.controller;
 
+import com.bookstore.common.ApiResponse;
+import com.bookstore.modules.cart.dto.*;
+import com.bookstore.modules.cart.service.CartService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST Controller for Cart operations
- * 
- * TODO: Implement the following endpoints:
- * - GET    /api/cart              - Get current user's cart
- * - POST   /api/cart/add          - Add item to cart
- * - PUT    /api/cart/items/{id}   - Update cart item quantity
- * - DELETE /api/cart/items/{id}   - Remove item from cart
- * - DELETE /api/cart/clear        - Clear entire cart
- * 
- * TODO: Add security:
- * - @PreAuthorize("hasRole('USER')") on all methods
- * - Get userId from SecurityContext
- * 
- * TODO: Add validation:
- * - @Valid on request bodies
- * - Handle validation errors
- * 
- * TODO: Return proper HTTP status codes:
- * - 200 OK for successful operations
- * - 201 Created for add to cart
- * - 204 No Content for delete operations
- * - 400 Bad Request for validation errors
- * - 404 Not Found if cart/item doesn't exist
- */
 @RestController
 @RequestMapping("/api/cart")
+@RequiredArgsConstructor
 public class CartController {
-    // TODO: Implement cart controller endpoints
+
+    private final CartService cartService;
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<CartResponse>> getCart() {
+        return ResponseEntity.ok(ApiResponse.success(cartService.getCart()));
+    }
+
+    @PostMapping("/add")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<CartResponse>> addToCart(@Valid @RequestBody AddToCartRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("Item added to cart", cartService.addToCart(request)));
+    }
+
+    @PutMapping("/update/{productId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<CartResponse>> updateQuantity(
+            @PathVariable Long productId,
+            @Valid @RequestBody UpdateCartItemRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("Cart updated", cartService.updateQuantity(productId, request)));
+    }
+
+    @DeleteMapping("/remove/{productId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<CartResponse>> removeItem(@PathVariable Long productId) {
+        return ResponseEntity.ok(ApiResponse.success("Item removed", cartService.removeItem(productId)));
+    }
+
+    @DeleteMapping("/clear")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> clearCart() {
+        cartService.clearCart();
+        return ResponseEntity.ok(ApiResponse.success("Cart cleared", null));
+    }
 }

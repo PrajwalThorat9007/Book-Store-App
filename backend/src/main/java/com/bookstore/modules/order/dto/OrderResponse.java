@@ -1,21 +1,30 @@
+// Manas: Module changed → modules/order/dto
+// What's changed: New file. Full order response DTO returned to the client.
+//                 Contains flattened user info, address string, and list of items.
+
 package com.bookstore.modules.order.dto;
 
+import lombok.Data;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
 /**
- * DTO for Order Response
- * 
- * TODO: Implement the following fields:
- * - Long id
- * - Long userId
- * - String orderNumber (unique identifier)
- * - List<OrderItemResponse> items
- * - BigDecimal totalAmount
- * - String status (OrderStatus enum)
- * - AddressResponse shippingAddress
- * - LocalDateTime createdAt
- * - LocalDateTime updatedAt
- * 
- * TODO: Include order tracking information
+ * Response DTO for Order endpoints (GET and POST responses).
+ *
+ * Manas: We flatten the delivery address into one readable string here.
+ *        We never return the full Address entity — only what the client needs.
+ *        Items is a List<OrderItemResponse> — each item mapped separately.
  */
+@Data
 public class OrderResponse {
-    // TODO: Implement order response fields
+
+    private Long id;
+    private Long userId;
+    private String userName;
+    private String deliveryAddress;   // "line1, city, state pincode"
+    private BigDecimal totalAmount;
+    private String status;            // PENDING / CONFIRMED / SHIPPED / DELIVERED / CANCELLED
+    private LocalDateTime createdAt;
+    private List<OrderItemResponse> items;
 }
