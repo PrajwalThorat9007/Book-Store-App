@@ -1,22 +1,18 @@
-// Manas: Module changed → modules/order/dto
-// What's changed: New file. DTO for placing a new order.
-//                 User sends only the delivery address ID — everything
-//                 else (cart items, price) is read server-side.
-
 package com.bookstore.modules.order.dto;
+
+/*
+ * This is the request DTO for placing a new order.
+ * The client only needs to send the delivery address ID.
+ * Cart items and prices are always read server-side — never trusted from the frontend.
+ */
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-/**
- * Request DTO for POST /api/orders (place order)
- *
- * Manas: The user only needs to tell us WHICH address to deliver to.
- *        Cart items and prices are always read from the DB — never trusted from frontend.
- */
 @Data
 public class OrderRequest {
 
+    // ID of the delivery address the user wants the order shipped to
     @NotNull(message = "Delivery address ID is required")
     private Long deliveryAddressId;
 }

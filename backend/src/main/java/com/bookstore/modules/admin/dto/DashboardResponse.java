@@ -1,8 +1,10 @@
-// Manas: Module changed → modules/admin/dto/DashboardResponse.java
-// What's changed: Was an empty TODO stub, now implemented with all dashboard stats fields
-// Kept the original filename since the stub already had this name in the project structure
-
 package com.bookstore.modules.admin.dto;
+
+/*
+ * This is the response DTO for the admin dashboard endpoint.
+ * It carries all the top-level summary numbers shown on the admin dashboard page.
+ * Built using the builder pattern — AdminService constructs it via DashboardResponse.builder().
+ */
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,15 +19,21 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class DashboardResponse {
 
-    // Manas: The four main numbers the admin dashboard card section shows
+    // Total number of registered users in the system
     private long totalUsers;
+
+    // Total number of orders placed across all users
     private long totalOrders;
+
+    // Total number of products listed in the store
     private long totalProducts;
 
-    // Manas: BigDecimal for money — never use double/float for currency
+    // Sum of all order amounts — BigDecimal used to avoid floating point precision issues
     private BigDecimal totalRevenue;
 
-    // Manas: Extra useful fields the TODO comment suggested — added both
+    // Number of orders still in PENDING status — needs admin action
     private long pendingOrders;
+
+    // Number of products with stock quantity below 10 — needs restocking
     private long lowStockProducts;
 }

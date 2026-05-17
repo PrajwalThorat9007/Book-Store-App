@@ -1,5 +1,12 @@
 package com.bookstore.modules.category.controller;
 
+/*
+ * This is the controller layer for the Category module.
+ * It handles all incoming HTTP requests related to book categories.
+ * Delegates all business logic to CategoryService.
+ * Base URL: /api/categories
+ */
+
 import com.bookstore.modules.category.dto.CategoryRequest;
 import com.bookstore.modules.category.dto.CategoryResponse;
 import com.bookstore.modules.category.service.CategoryService;
@@ -18,18 +25,14 @@ public class CategoryController {
     @Autowired
     private CategoryService categoryService;
 
-    /**
-     * GET /api/categories — Public endpoint to list all categories.
-     */
+    // Returns a list of all available book categories — open to everyone, no auth needed
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getAllCategories() {
         List<CategoryResponse> categories = categoryService.getAllCategories();
         return ResponseEntity.ok(categories);
     }
 
-    /**
-     * POST /api/categories — Admin endpoint to create a new category.
-     */
+    // Creates a new category — admin use only, validates request body before processing
     @PostMapping
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
         CategoryResponse created = categoryService.createCategory(request);

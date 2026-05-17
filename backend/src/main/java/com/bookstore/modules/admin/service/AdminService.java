@@ -1,10 +1,11 @@
-// Manas: Module changed → modules/admin/service/AdminService.java
-// What's changed: Was an empty TODO stub, now fully implemented with dashboard stats,
-// user list, order list, order status update, delete user, revenue analytics, and top products
-// Fixed type inference issue in getTopSellingProducts by explicitly typing OrderItem in lambdas
-// Fixed getItems() → getOrderItems() to match the actual field name in Order entity
-
 package com.bookstore.modules.admin.service;
+
+/*
+ * This is the service layer class for the Admin module.
+ * It contains all business logic for admin dashboard, user management, order management, and analytics.
+ * Every public method first calls verifyAdmin() to ensure only ADMIN role users can proceed.
+ * Does not have its own repository — reads data from existing module repositories (user, order, product).
+ */
 
 import com.bookstore.entity.Order;
 import com.bookstore.entity.OrderItem;
@@ -30,12 +31,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminService {
 
-    // Manas: No admin repository needed — admin just reads from existing module repositories
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
 
-    // Manas: Every public method calls this first — if caller is not ADMIN we stop immediately
+    // Verifies the caller is an ADMIN — called at the start of every public method to block non-admins
     private User verifyAdmin(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("No user found with email: " + email));
@@ -48,7 +48,7 @@ public class AdminService {
         return user;
     }
 
-    // Manas: Dashboard — aggregates all the top-level numbers in one shot
+    // Aggregates all top-level stats for the admin dashboard in a single call
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardStats(String adminEmail) {
         verifyAdmin(adminEmail);
@@ -57,17 +57,17 @@ public class AdminService {
         long totalOrders   = orderRepository.count();
         long totalProducts = productRepository.count();
 
-        // Manas: Summing totalAmount across every order for the revenue figure
+        // Sum totalAmount across all orders to get overall revenue
         BigDecimal totalRevenue = orderRepository.findAll().stream()
                 .map(Order::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Manas: Pending orders — admin needs to know what still needs processing
+        // Count orders still in PENDING state — these need admin attention
         long pendingOrders = orderRepository.findAll().stream()
                 .filter(o -> o.getStatus().equals("PENDING"))
                 .count();
 
-        // Manas: Low stock = products with stockQuantity below 10
+        // Flag products with stock below 10 as low stock
         long lowStockProducts = productRepository.findAll().stream()
                 .filter(p -> p.getStockQuantity() < 10)
                 .count();
@@ -85,22 +85,22 @@ public class AdminService {
                 .build();
     }
 
-    // Manas: Returns all users with their order count and total spend calculated on the fly
+    // Returns all users with their order count and total spend calculated on the fly
     @Transactional(readOnly = true)
     public List<UserListResponse> getAllUsers(String adminEmail) {
         verifyAdmin(adminEmail);
-
         log.info("Admin {} fetching all users", adminEmail);
 
         List<Order> allOrders = orderRepository.findAll();
 
         return userRepository.findAll().stream()
                 .map(u -> {
-                    // Manas: Filter orders belonging to this specific user
+                    // Filter orders that belong to this specific user
                     List<Order> userOrders = allOrders.stream()
                             .filter(o -> o.getUser().getId().equals(u.getId()))
                             .collect(Collectors.toList());
 
+                    // Sum all order amounts to get the user's total spend
                     BigDecimal totalSpent = userOrders.stream()
                             .map(Order::getTotalAmount)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -118,11 +118,10 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    // Manas: Returns all orders with user info embedded for the admin order management table
+    // Returns all orders with embedded user info — used in the admin order management table
     @Transactional(readOnly = true)
     public List<OrderSummary> getAllOrders(String adminEmail) {
         verifyAdmin(adminEmail);
-
         log.info("Admin {} fetching all orders", adminEmail);
 
         return orderRepository.findAll().stream()
@@ -134,12 +133,13 @@ public class AdminService {
                         .status(o.getStatus())
                         .totalAmount(o.getTotalAmount())
                         .createdAt(o.getCreatedAt())
+                        // itemCount gives a quick sense of order size without loading all items
                         .itemCount(o.getOrderItems() != null ? o.getOrderItems().size() : 0)
                         .build())
                 .collect(Collectors.toList());
     }
 
-    // Manas: Admin manually updates order status — e.g. PENDING → CONFIRMED, SHIPPED → DELIVERED
+    // Updates the status of any order — admin can move orders through any status transition
     @Transactional
     public OrderSummary updateOrderStatus(Long orderId, String newStatus, String adminEmail) {
         verifyAdmin(adminEmail);
@@ -165,7 +165,7 @@ public class AdminService {
                 .build();
     }
 
-    // Manas: Hard delete a user by ID — admin only, use carefully
+    // Hard deletes a user by ID — use carefully, this is irreversible
     @Transactional
     public void deleteUser(Long userId, String adminEmail) {
         verifyAdmin(adminEmail);
@@ -177,7 +177,7 @@ public class AdminService {
         log.info("Admin {} deleted user {} ({})", adminEmail, userId, target.getEmail());
     }
 
-    // Manas: Standalone revenue endpoint — same logic as dashboard but returns just the number
+    // Returns total revenue by summing all order amounts — same logic as dashboard but standalone
     @Transactional(readOnly = true)
     public BigDecimal getTotalRevenue(String adminEmail) {
         verifyAdmin(adminEmail);
@@ -190,14 +190,13 @@ public class AdminService {
         return revenue;
     }
 
-    // Manas: Groups order items by product title, sums quantities, sorts best seller first
-    // Explicitly typed OrderItem in lambdas to fix Java type inference issue across flatMap chain
+    // Groups all order items by product title, sums quantities, and sorts best sellers first
     @Transactional(readOnly = true)
     public List<Map.Entry<String, Integer>> getTopSellingProducts(String adminEmail) {
         verifyAdmin(adminEmail);
-
         log.info("Admin {} fetching top selling products", adminEmail);
 
+        // Flatten all order items across all orders, group by product title, sum quantities
         Map<String, Integer> salesMap = orderRepository.findAll().stream()
                 .flatMap(o -> o.getOrderItems().stream())
                 .collect(Collectors.groupingBy(
@@ -205,6 +204,7 @@ public class AdminService {
                         Collectors.summingInt((OrderItem item) -> item.getQuantity())
                 ));
 
+        // Sort descending by quantity sold — highest selling product comes first
         return salesMap.entrySet().stream()
                 .sorted((a, b) -> b.getValue() - a.getValue())
                 .collect(Collectors.toList());

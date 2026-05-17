@@ -1,9 +1,12 @@
 package com.bookstore.modules.feedback.controller;
 
-// Manas: Module changed → modules/feedback/controller/FeedbackController.java
-// What's changed: Implemented all 7 feedback endpoints — submit, view, rating summary,
-//                 edit, delete (user), my-reviews, and admin delete.
-//                 Using @RequestParam String email as temp auth until JWT is wired up.
+/*
+ * This is the controller layer for the Feedback module.
+ * It handles all HTTP requests related to product reviews and ratings.
+ * Uses ?email= query param as temporary auth until JWT is fully wired up.
+ * Delegates all business logic to FeedbackService.
+ * Base URL: /api/feedback
+ */
 
 import com.bookstore.modules.feedback.dto.FeedbackRequest;
 import com.bookstore.modules.feedback.dto.FeedbackResponse;
@@ -24,13 +27,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FeedbackController {
 
-    // Manas: Injected via @RequiredArgsConstructor — same pattern used in OrderController
     private final FeedbackService feedbackService;
 
-
-    // Manas: POST /api/feedback?email=user@example.com
-    //        Submit a new review — email param is temp auth until JWT is ready
-    //        Returns 201 Created with the saved review in the body
+    // Submits a new review for a product — one review per user per product is enforced in service
     @PostMapping
     public ResponseEntity<FeedbackResponse> submitFeedback(
             @Valid @RequestBody FeedbackRequest request,
@@ -41,10 +40,7 @@ public class FeedbackController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-
-    // Manas: GET /api/feedback/product/{productId}
-    //        Public endpoint — no email param needed
-    //        Returns list of all reviews for the given product
+    // Returns all reviews for a specific product — public endpoint, no auth needed
     @GetMapping("/product/{productId}")
     public ResponseEntity<List<FeedbackResponse>> getReviewsByProduct(
             @PathVariable Long productId) {
@@ -54,10 +50,7 @@ public class FeedbackController {
         return ResponseEntity.ok(reviews);
     }
 
-
-    // Manas: GET /api/feedback/product/{productId}/summary
-    //        Public endpoint — returns average rating + total review count
-    //        Frontend uses this to render the star widget on the product page
+    // Returns the average rating and total review count for a product — used to render the star widget
     @GetMapping("/product/{productId}/summary")
     public ResponseEntity<RatingSummary> getRatingSummary(
             @PathVariable Long productId) {
@@ -67,10 +60,7 @@ public class FeedbackController {
         return ResponseEntity.ok(summary);
     }
 
-
-    // Manas: PUT /api/feedback/{id}?email=user@example.com
-    //        User can only edit their own review — ownership check happens in service
-    //        Returns 200 OK with the updated review
+    // Updates an existing review — service verifies the review belongs to the requesting user
     @PutMapping("/{id}")
     public ResponseEntity<FeedbackResponse> updateFeedback(
             @PathVariable Long id,
@@ -82,10 +72,7 @@ public class FeedbackController {
         return ResponseEntity.ok(response);
     }
 
-
-    // Manas: DELETE /api/feedback/{id}?email=user@example.com
-    //        User can only delete their own review — ownership check happens in service
-    //        Returns 204 No Content on success (nothing to send back after delete)
+    // Deletes a review — service verifies the review belongs to the requesting user
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFeedback(
             @PathVariable Long id,
@@ -96,10 +83,7 @@ public class FeedbackController {
         return ResponseEntity.noContent().build();
     }
 
-
-    // Manas: GET /api/feedback/my-reviews?email=user@example.com
-    //        Returns all reviews ever submitted by this user
-    //        Useful for a "My Reviews" page in the user profile section
+    // Returns all reviews submitted by a specific user — used in the "My Reviews" profile section
     @GetMapping("/my-reviews")
     public ResponseEntity<List<FeedbackResponse>> getMyReviews(
             @RequestParam String email) {
@@ -109,10 +93,7 @@ public class FeedbackController {
         return ResponseEntity.ok(reviews);
     }
 
-
-    // Manas: DELETE /api/feedback/admin/{id}?email=admin@example.com
-    //        Admin can delete any review regardless of who submitted it
-    //        No ownership check — admin email is logged for audit trail
+    // Admin-only delete — removes any review regardless of who submitted it
     @DeleteMapping("/admin/{id}")
     public ResponseEntity<Void> adminDeleteFeedback(
             @PathVariable Long id,

@@ -1,28 +1,52 @@
 package com.bookstore.modules.wishlist.controller;
 
+/*
+ * This is the controller layer for the Wishlist module.
+ * It handles all HTTP requests related to a user's saved product wishlist.
+ * Delegates all business logic to WishlistService.
+ * Base URL: /api/wishlist
+ */
+
+import com.bookstore.modules.wishlist.dto.WishlistResponse;
+import com.bookstore.modules.wishlist.service.WishlistService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST Controller for Wishlist operations
- * 
- * TODO: Implement the following endpoints:
- * - GET    /api/wishlist                - Get current user's wishlist
- * - POST   /api/wishlist/add/{productId} - Add product to wishlist
- * - DELETE /api/wishlist/remove/{productId} - Remove product from wishlist
- * - GET    /api/wishlist/check/{productId} - Check if product is in wishlist
- * 
- * TODO: Add security:
- * - @PreAuthorize("hasRole('USER')") on all methods
- * - Get userId from SecurityContext
- * 
- * TODO: Return proper HTTP status codes:
- * - 200 OK for successful operations
- * - 201 Created for add to wishlist
- * - 204 No Content for remove
- * - 409 Conflict if product already in wishlist
- */
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/wishlist")
+@RequiredArgsConstructor
 public class WishlistController {
-    // TODO: Implement wishlist controller endpoints
+
+    private final WishlistService wishlistService;
+
+    // Returns the current user's wishlist — auto-creates an empty one if it doesn't exist yet
+    @GetMapping
+    public ResponseEntity<WishlistResponse> getWishlist() {
+        return ResponseEntity.ok(wishlistService.getWishlist());
+    }
+
+    // Adds a product to the wishlist — returns 409 if the product is already saved
+    @PostMapping("/add/{productId}")
+    public ResponseEntity<WishlistResponse> addToWishlist(@PathVariable Long productId) {
+        WishlistResponse response = wishlistService.addToWishlist(productId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // Removes a product from the wishlist — returns 204 No Content on success
+    @DeleteMapping("/remove/{productId}")
+    public ResponseEntity<Void> removeFromWishlist(@PathVariable Long productId) {
+        wishlistService.removeFromWishlist(productId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Checks if a product is already in the wishlist — returns { "inWishlist": true/false }
+    @GetMapping("/check/{productId}")
+    public ResponseEntity<Map<String, Boolean>> isInWishlist(@PathVariable Long productId) {
+        boolean inWishlist = wishlistService.isInWishlist(productId);
+        return ResponseEntity.ok(Map.of("inWishlist", inWishlist));
+    }
 }

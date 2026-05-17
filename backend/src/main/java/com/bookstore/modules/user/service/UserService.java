@@ -1,5 +1,11 @@
 package com.bookstore.modules.user.service;
 
+/*
+ * This is the service layer class for the User module.
+ * It contains all business logic for user registration, login, and profile management.
+ * Handles password encoding, duplicate email checks, and reading the authenticated user from SecurityContext.
+ */
+
 import com.bookstore.entity.User;
 import com.bookstore.modules.user.dto.AuthResponse;
 import com.bookstore.modules.user.dto.LoginRequest;
@@ -21,7 +27,9 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // Registers a new user — checks for duplicate email, hashes the password, saves to DB
     public AuthResponse registerUser(RegisterRequest request) {
+        // Reject registration if the email is already taken
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email is already taken!");
         }
@@ -29,31 +37,35 @@ public class UserService {
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        // Always store hashed password — never plain text
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("ROLE_USER"); // Default role
+        user.setRole("ROLE_USER");
 
         userRepository.save(user);
 
-        // TODO: Generate real JWT token using JwtUtil
+        // TODO: Replace with real JWT token generation using JwtUtil
         String token = "mock-jwt-token-for-now";
-        
+
         return new AuthResponse(token, "User registered successfully");
     }
 
+    // Validates email and password, returns a JWT token if credentials match
     public AuthResponse loginUser(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password!"));
 
+        // Compare the raw password against the stored BCrypt hash
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid email or password!");
         }
 
-        // TODO: Generate real JWT token using JwtUtil
+        // TODO: Replace with real JWT token generation using JwtUtil
         String token = "mock-jwt-token-for-now";
 
         return new AuthResponse(token, "Login successful");
     }
 
+    // Reads the authenticated user's email from SecurityContext and returns their profile
     public UserResponse getUserProfile() {
         String email = getAuthenticatedUserEmail();
         User user = userRepository.findByEmail(email)
@@ -61,22 +73,22 @@ public class UserService {
         return mapToUserResponse(user);
     }
 
+    // Updates the user's name — email and password updates are intentionally excluded here
     public UserResponse updateUserProfile(UserResponse updateRequest) {
         String email = getAuthenticatedUserEmail();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found!"));
 
+        // Only update name if a non-empty value is provided
         if (updateRequest.getName() != null && !updateRequest.getName().isEmpty()) {
             user.setName(updateRequest.getName());
         }
-        
-        // Note: Not updating email or password here for simplicity, 
-        // usually email updates require verification.
-        
+
         User updatedUser = userRepository.save(user);
         return mapToUserResponse(updatedUser);
     }
 
+    // Extracts the logged-in user's email from the Spring Security context
     private String getAuthenticatedUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -85,6 +97,7 @@ public class UserService {
         return authentication.getName();
     }
 
+    // Converts a User entity to a UserResponse DTO — never exposes password or sensitive fields
     private UserResponse mapToUserResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());

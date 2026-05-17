@@ -1,8 +1,11 @@
 package com.bookstore.modules.feedback.service;
 
-// Manas: Module changed → modules/feedback/service/FeedbackService.java
-// What's changed: Created FeedbackService with all business logic for
-//                 submitting, editing, deleting and fetching product reviews.
+/*
+ * This is the service layer class for the Feedback module.
+ * It contains all business logic for submitting, editing, deleting, and fetching product reviews.
+ * Enforces the one-review-per-user-per-product rule and ownership checks on edit/delete.
+ * Admin delete bypasses ownership checks — any review can be removed by an admin.
+ */
 
 import com.bookstore.entity.Feedback;
 import com.bookstore.entity.Product;
@@ -26,13 +29,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FeedbackService {
 
-    // Manas: Injected via @RequiredArgsConstructor — no need for @Autowired
     private final FeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
-
-    // Manas: Submit a new review — one review per user per product enforced here
+    // Submits a new review — checks for duplicate review before hitting the DB unique constraint
     @Transactional
     public FeedbackResponse submitFeedback(FeedbackRequest request, String email) {
         log.info("User {} is submitting a review for product {}", email, request.getProductId());
@@ -43,8 +44,7 @@ public class FeedbackService {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + request.getProductId()));
 
-        // Manas: Check if user already reviewed this product before hitting the DB unique constraint
-        //        This gives a clean readable error instead of a raw SQL constraint violation
+        // Reject if the user has already reviewed this product — gives a clean error before the DB constraint fires
         boolean alreadyReviewed = feedbackRepository
                 .findByUserIdAndProductId(user.getId(), product.getId())
                 .isPresent();
@@ -65,8 +65,7 @@ public class FeedbackService {
         return mapToResponse(saved);
     }
 
-
-    // Manas: Fetch all reviews for a product — public endpoint, no auth needed
+    // Returns all reviews for a product — public, no auth needed
     @Transactional(readOnly = true)
     public List<FeedbackResponse> getReviewsByProduct(Long productId) {
         log.info("Fetching all reviews for product {}", productId);
@@ -77,9 +76,7 @@ public class FeedbackService {
                 .collect(Collectors.toList());
     }
 
-
-    // Manas: Get average rating and total review count for a product
-    //        Returns 0.0 average and hasReviews=false if no reviews exist yet
+    // Calculates average rating and review count — returns 0.0 average if no reviews exist
     @Transactional(readOnly = true)
     public RatingSummary getRatingSummary(Long productId) {
         log.info("Fetching rating summary for product {}", productId);
@@ -87,7 +84,7 @@ public class FeedbackService {
         Double avg = feedbackRepository.findAverageRatingByProductId(productId);
         long count = feedbackRepository.countByProductId(productId);
 
-        // Manas: JPQL AVG returns null when there are no rows — default to 0.0
+        // JPQL AVG returns null when there are no rows — default to 0.0 to avoid NPE
         double roundedAvg = (avg == null) ? 0.0 : Math.round(avg * 10.0) / 10.0;
 
         return RatingSummary.builder()
@@ -98,8 +95,7 @@ public class FeedbackService {
                 .build();
     }
 
-
-    // Manas: Edit an existing review — only the owner can edit their own review
+    // Updates an existing review — verifies the review belongs to the requesting user before editing
     @Transactional
     public FeedbackResponse updateFeedback(Long feedbackId, FeedbackRequest request, String email) {
         log.info("User {} is attempting to edit review {}", email, feedbackId);
@@ -110,7 +106,7 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new RuntimeException("Review not found with id: " + feedbackId));
 
-        // Manas: Ownership check — user can only edit their own review, not someone else's
+        // Ownership check — users can only edit their own reviews
         if (!feedback.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("You are not allowed to edit someone else's review.");
         }
@@ -124,9 +120,7 @@ public class FeedbackService {
         return mapToResponse(updated);
     }
 
-
-    // Manas: Delete a review — user can only delete their own review
-    //        Admin delete is a separate method below with no ownership check
+    // Deletes a review — verifies ownership before deleting, users cannot delete others' reviews
     @Transactional
     public void deleteFeedback(Long feedbackId, String email) {
         log.info("User {} is attempting to delete review {}", email, feedbackId);
@@ -137,7 +131,7 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new RuntimeException("Review not found with id: " + feedbackId));
 
-        // Manas: Same ownership check as update — users cannot delete other users' reviews
+        // Ownership check — same rule as update, users cannot delete other users' reviews
         if (!feedback.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("You are not allowed to delete someone else's review.");
         }
@@ -146,8 +140,7 @@ public class FeedbackService {
         log.info("Review {} deleted by user {}", feedbackId, email);
     }
 
-
-    // Manas: Get all reviews submitted by a specific user (my-reviews page)
+    // Returns all reviews submitted by a specific user — used in the "My Reviews" profile page
     @Transactional(readOnly = true)
     public List<FeedbackResponse> getMyReviews(String email) {
         log.info("Fetching all reviews submitted by user {}", email);
@@ -161,8 +154,7 @@ public class FeedbackService {
                 .collect(Collectors.toList());
     }
 
-
-    // Manas: Admin-only delete — no ownership check, admin can remove any review
+    // Admin-only delete — no ownership check, admin can remove any review
     @Transactional
     public void adminDeleteFeedback(Long feedbackId, String adminEmail) {
         log.info("Admin {} is deleting review {}", adminEmail, feedbackId);
@@ -174,10 +166,7 @@ public class FeedbackService {
         log.info("Review {} deleted by admin {}", feedbackId, adminEmail);
     }
 
-
-    // Manas: Private helper — converts Feedback entity to FeedbackResponse DTO
-    //        Called in every method that returns data to the controller
-    //        Keeps the mapping logic in one place so it's easy to update later
+    // Converts a Feedback entity to a FeedbackResponse DTO — called by every method that returns data
     private FeedbackResponse mapToResponse(Feedback feedback) {
         return FeedbackResponse.builder()
                 .id(feedback.getId())

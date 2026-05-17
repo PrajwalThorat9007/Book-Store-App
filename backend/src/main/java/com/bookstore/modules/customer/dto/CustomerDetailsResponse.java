@@ -1,55 +1,33 @@
 package com.bookstore.modules.customer.dto;
 
-/**
- * DTO for Customer Details Response
- * 
- * TODO: Implement the following fields:
- * - Long id
- * - Long userId
- * - String phone
- * - String preferenceNotes
- * - List<AddressResponse> addresses
- * - AddressResponse defaultAddress
+/*
+ * This is the response DTO for customer profile details.
+ * Returned by GET and PUT /api/customers/details.
+ * Includes the full list of saved addresses and highlights the default one separately.
  */
 
 import lombok.Data;
 
 import java.util.List;
 
-/**
- * DTO returned to the client
- * when customer profile details are requested.
- */
 @Data
 public class CustomerDetailsResponse {
 
-    /**
-     * Customer profile id.
-     */
+    // Unique ID of the customer profile record
     private Long id;
 
-    /**
-     * Associated user id.
-     */
+    // ID of the associated user account
     private Long userId;
 
-    /**
-     * Customer phone number.
-     */
+    // Customer's phone number — may be null if not yet provided
     private String phone;
 
-    /**
-     * Customer preference notes.
-     */
+    // Customer's delivery preference notes — may be null if not yet provided
     private String preferenceNotes;
 
-    /**
-     * List of all saved customer addresses.
-     */
+    // All saved delivery addresses for this customer
     private List<AddressResponse> addresses;
 
-    /**
-     * Customer default address.
-     */
+    // The address currently marked as default — null if no default is set
     private AddressResponse defaultAddress;
 }
