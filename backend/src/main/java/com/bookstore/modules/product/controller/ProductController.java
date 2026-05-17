@@ -7,6 +7,7 @@ package com.bookstore.modules.product.controller;
  * Base URL: /api/products
  */
 
+import com.bookstore.common.AppConstants;
 import com.bookstore.modules.product.dto.ProductRequest;
 import com.bookstore.modules.product.dto.ProductResponse;
 import com.bookstore.modules.product.service.ProductService;
@@ -31,8 +32,8 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<Page<ProductResponse>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id,asc") String sort) {
+            @RequestParam(defaultValue = "" + AppConstants.DEFAULT_PAGE_SIZE) int size,
+            @RequestParam(defaultValue = AppConstants.DEFAULT_SORT_BY + "," + AppConstants.DEFAULT_SORT_DIRECTION) String sort) {
 
         // Parse the sort parameter into field name and direction
         String[] sortParams = sort.split(",");

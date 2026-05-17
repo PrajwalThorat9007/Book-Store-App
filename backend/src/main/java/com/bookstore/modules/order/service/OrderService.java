@@ -8,6 +8,7 @@ package com.bookstore.modules.order.service;
  * Ownership checks ensure users can only view or cancel their own orders.
  */
 
+import com.bookstore.common.OrderStatus;
 import com.bookstore.entity.*;
 import com.bookstore.modules.cart.repository.CartItemRepository;
 import com.bookstore.modules.cart.repository.CartRepository;
@@ -95,7 +96,7 @@ public class OrderService {
         order.setUser(user);
         order.setDeliveryAddress(deliveryAddress);
         order.setTotalAmount(total);
-        order.setStatus("PENDING");
+        order.setStatus(OrderStatus.PENDING.name());
         Order savedOrder = orderRepository.save(order);
 
         // Assign the saved order to each item and persist them
@@ -144,7 +145,8 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
 
         // Only PENDING orders can be cancelled — reject if already shipped or delivered
-        if (!"PENDING".equals(order.getStatus())) {
+        OrderStatus currentStatus = OrderStatus.fromString(order.getStatus());
+        if (currentStatus == null || !currentStatus.isCancellable()) {
             throw new RuntimeException(
                     "Only PENDING orders can be cancelled. Current status: " + order.getStatus());
         }
@@ -157,7 +159,7 @@ public class OrderService {
             productRepository.save(p);
         });
 
-        order.setStatus("CANCELLED");
+        order.setStatus(OrderStatus.CANCELLED.name());
         log.info("Order {} cancelled for user: {}", orderId, email);
         return mapToOrderResponse(orderRepository.save(order), items);
     }
