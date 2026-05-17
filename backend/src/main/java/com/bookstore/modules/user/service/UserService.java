@@ -6,6 +6,7 @@ package com.bookstore.modules.user.service;
  * Handles password encoding, duplicate email checks, and reading the authenticated user from SecurityContext.
  */
 
+import com.bookstore.common.AppConstants;
 import com.bookstore.entity.User;
 import com.bookstore.modules.user.dto.AuthResponse;
 import com.bookstore.modules.user.dto.LoginRequest;
@@ -39,7 +40,7 @@ public class UserService {
         user.setEmail(request.getEmail());
         // Always store hashed password — never plain text
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("ROLE_USER");
+        user.setRole(AppConstants.ROLE_USER);
 
         userRepository.save(user);
 

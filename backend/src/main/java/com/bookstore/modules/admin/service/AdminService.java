@@ -7,6 +7,8 @@ package com.bookstore.modules.admin.service;
  * Does not have its own repository — reads data from existing module repositories (user, order, product).
  */
 
+import com.bookstore.common.AppConstants;
+import com.bookstore.common.OrderStatus;
 import com.bookstore.entity.Order;
 import com.bookstore.entity.OrderItem;
 import com.bookstore.entity.User;
@@ -64,12 +66,12 @@ public class AdminService {
 
         // Count orders still in PENDING state — these need admin attention
         long pendingOrders = orderRepository.findAll().stream()
-                .filter(o -> o.getStatus().equals("PENDING"))
+                .filter(o -> o.getStatus().equals(OrderStatus.PENDING.name()))
                 .count();
 
-        // Flag products with stock below 10 as low stock
+        // Flag products with stock below LOW_STOCK_THRESHOLD as low stock
         long lowStockProducts = productRepository.findAll().stream()
-                .filter(p -> p.getStockQuantity() < 10)
+                .filter(p -> p.getStockQuantity() < AppConstants.LOW_STOCK_THRESHOLD)
                 .count();
 
         log.info("Admin {} fetched dashboard: users={}, orders={}, revenue={}, pending={}, lowStock={}",
