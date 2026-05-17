@@ -1,8 +1,10 @@
-// Manas: Module changed → modules/order/repository
-// What's changed: New file. JPA Repository for Order entity.
-//                 Custom queries for fetching by user and by id+user combo.
-
 package com.bookstore.modules.order.repository;
+
+/*
+ * This is the repository interface for the Order module.
+ * It extends JpaRepository to get standard CRUD operations for free.
+ * Provides custom queries to fetch orders by user and to enforce ownership checks.
+ */
 
 import com.bookstore.entity.Order;
 import com.bookstore.entity.User;
@@ -12,20 +14,12 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository for Order entity.
- *
- * Manas: findByUserOrderByCreatedAtDesc → gets a user's orders newest-first.
- *        findByIdAndUser → fetches an order only if it belongs to that user.
- *        This prevents one user from seeing another user's order details.
- */
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    // Manas: Returns all orders for a user, sorted newest first
+    // Returns all orders for a user sorted newest first — used in order history page
     List<Order> findByUserOrderByCreatedAtDesc(User user);
 
-    // Manas: Ownership check built into the query — returns empty if order
-    //        exists but belongs to a different user
+    // Fetches an order only if it belongs to the given user — prevents users from viewing others' orders
     Optional<Order> findByIdAndUser(Long id, User user);
 }

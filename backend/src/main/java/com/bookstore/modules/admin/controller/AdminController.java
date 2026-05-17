@@ -1,8 +1,13 @@
-// Manas: Module changed → modules/admin/controller/AdminController.java
-// What's changed: Was an empty TODO stub, now fully implemented with all 7 admin endpoints
-// Dashboard, users, orders, status update, delete user, revenue, top products
-
 package com.bookstore.modules.admin.controller;
+
+/*
+ * This is the controller layer for the Admin module.
+ * It handles all HTTP requests for admin-only operations like dashboard stats,
+ * user management, order management, and sales analytics.
+ * Uses ?email= query param as temporary auth until JWT role-based security is fully wired up.
+ * Delegates all business logic to AdminService.
+ * Base URL: /api/admin
+ */
 
 import com.bookstore.modules.admin.dto.DashboardResponse;
 import com.bookstore.modules.admin.dto.OrderSummary;
@@ -21,35 +26,30 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AdminController {
 
-    // Manas: RequiredArgsConstructor injects AdminService — no @Autowired needed
     private final AdminService adminService;
 
-    // Manas: GET /api/admin/dashboard?email=admin@test.com
-    // Returns totalUsers, totalOrders, totalProducts, totalRevenue, pendingOrders, lowStockProducts
+    // Returns dashboard summary — total users, orders, products, revenue, pending orders, low stock count
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardResponse> getDashboard(@RequestParam String email) {
         DashboardResponse stats = adminService.getDashboardStats(email);
         return ResponseEntity.ok(stats);
     }
 
-    // Manas: GET /api/admin/users?email=admin@test.com
-    // Returns all users with their order count and total spend
+    // Returns all registered users with their order count and total spend
     @GetMapping("/users")
     public ResponseEntity<List<UserListResponse>> getAllUsers(@RequestParam String email) {
         List<UserListResponse> users = adminService.getAllUsers(email);
         return ResponseEntity.ok(users);
     }
 
-    // Manas: GET /api/admin/orders?email=admin@test.com
-    // Returns all orders with user info, status, amount and item count
+    // Returns all orders in the system with user info, status, amount, and item count
     @GetMapping("/orders")
     public ResponseEntity<List<OrderSummary>> getAllOrders(@RequestParam String email) {
         List<OrderSummary> orders = adminService.getAllOrders(email);
         return ResponseEntity.ok(orders);
     }
 
-    // Manas: PUT /api/admin/orders/{id}/status?email=admin@test.com&status=SHIPPED
-    // Admin manually moves an order through the status flow
+    // Manually moves an order through the status flow — e.g. PENDING → CONFIRMED → SHIPPED
     @PutMapping("/orders/{id}/status")
     public ResponseEntity<OrderSummary> updateOrderStatus(
             @PathVariable Long id,
@@ -59,8 +59,7 @@ public class AdminController {
         return ResponseEntity.ok(updated);
     }
 
-    // Manas: DELETE /api/admin/users/{id}?email=admin@test.com
-    // Hard deletes a user — admin only, irreversible
+    // Hard deletes a user by ID — irreversible, admin use only
     @DeleteMapping("/users/{id}")
     public ResponseEntity<String> deleteUser(
             @PathVariable Long id,
@@ -69,16 +68,14 @@ public class AdminController {
         return ResponseEntity.ok("User " + id + " deleted successfully");
     }
 
-    // Manas: GET /api/admin/analytics/revenue?email=admin@test.com
-    // Returns total revenue as a single BigDecimal number
+    // Returns the total revenue across all orders as a single BigDecimal value
     @GetMapping("/analytics/revenue")
     public ResponseEntity<BigDecimal> getTotalRevenue(@RequestParam String email) {
         BigDecimal revenue = adminService.getTotalRevenue(email);
         return ResponseEntity.ok(revenue);
     }
 
-    // Manas: GET /api/admin/analytics/top-products?email=admin@test.com
-    // Returns products sorted by units sold — best sellers first
+    // Returns products sorted by total units sold — best sellers appear first
     @GetMapping("/analytics/top-products")
     public ResponseEntity<List<Map.Entry<String, Integer>>> getTopProducts(
             @RequestParam String email) {

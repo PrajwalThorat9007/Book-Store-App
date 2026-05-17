@@ -1,26 +1,11 @@
 package com.bookstore.modules.customer.controller;
 
-import org.springframework.web.bind.annotation.*;
-
-/**
- * REST Controller for Customer Profile operations
- * 
- * TODO: Implement the following endpoints:
- * - GET    /api/customers/details        - Get customer profile
- * - PUT    /api/customers/details        - Update customer profile
- * - POST   /api/customers/addresses      - Add new address
- * - PUT    /api/customers/addresses/{id} - Update address
- * - DELETE /api/customers/addresses/{id} - Delete address
- * - PUT    /api/customers/addresses/{id}/default - Set as default address
- * 
- * TODO: Add security:
- * - @PreAuthorize("hasRole('USER')") on all methods
- * - Get userId from SecurityContext
- * 
- * TODO: Add validation:
- * - @Valid on request bodies
- * 
- * TODO: Return proper HTTP status codes
+/*
+ * This is the controller layer for the Customer module.
+ * It handles all HTTP requests related to customer profile and delivery address management.
+ * Currently uses a hardcoded userId = 1L — will be replaced with SecurityContext user once JWT is wired up.
+ * Delegates all business logic to CustomerService.
+ * Base URL: /api/customers
  */
 
 import com.bookstore.modules.customer.dto.AddressRequest;
@@ -33,163 +18,67 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST Controller for Customer Profile operations.
- *
- * This controller handles customer-related APIs such as:
- * - Customer profile management
- * - Address management
- * - Default address selection
- *
- * Base URL:
- * /api/customers
- */
 @RestController
 @RequestMapping("/api/customers")
 public class CustomerController {
 
-    /**
-     * Service layer dependency.
-     *
-     * Controller delegates business logic to service layer.
-     */
     private final CustomerService customerService;
 
-    /**
-     * Constructor Injection.
-     */
+    // Constructor injection — Spring automatically provides the CustomerService bean
     public CustomerController(CustomerService customerService) {
         this.customerService = customerService;
     }
 
-    /**
-     * Fetches customer profile details.
-     *
-     * Endpoint:
-     * GET /api/customers/details
-     *
-     * @return customer details response
-     */
+    // Returns the customer profile for the logged-in user — phone, preferences, and saved addresses
     @GetMapping("/details")
     public ResponseEntity<CustomerDetailsResponse> getCustomerDetails() {
-
-        // TODO:
-        // Replace hardcoded userId with SecurityContext user later
+        // TODO: Replace hardcoded userId with SecurityContext user once JWT is wired up
         Long userId = 1L;
-
-        CustomerDetailsResponse response =
-                customerService.getCustomerDetails(userId);
-
+        CustomerDetailsResponse response = customerService.getCustomerDetails(userId);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Updates customer profile details.
-     *
-     * Endpoint:
-     * PUT /api/customers/details
-     *
-     * @param request customer details request body
-     * @return updated customer details
-     */
+    // Creates or updates the customer profile — phone number and preference notes
     @PutMapping("/details")
     public ResponseEntity<CustomerDetailsResponse> updateCustomerDetails(
-            @Valid @RequestBody CustomerDetailsRequest request
-    ) {
-
+            @Valid @RequestBody CustomerDetailsRequest request) {
         Long userId = 1L;
-
-        CustomerDetailsResponse response =
-                customerService.updateCustomerDetails(userId, request);
-
+        CustomerDetailsResponse response = customerService.updateCustomerDetails(userId, request);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Adds a new customer address.
-     *
-     * Endpoint:
-     * POST /api/customers/addresses
-     *
-     * @param request address request body
-     * @return saved address response
-     */
+    // Adds a new delivery address — first address is automatically set as default
     @PostMapping("/addresses")
     public ResponseEntity<AddressResponse> addAddress(
-            @Valid @RequestBody AddressRequest request
-    ) {
-
+            @Valid @RequestBody AddressRequest request) {
         Long userId = 1L;
-
-        AddressResponse response =
-                customerService.addAddress(userId, request);
-
+        AddressResponse response = customerService.addAddress(userId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    /**
-     * Updates an existing customer address.
-     *
-     * Endpoint:
-     * PUT /api/customers/addresses/{id}
-     *
-     * @param id address id
-     * @param request updated address request
-     * @return updated address response
-     */
+    // Updates an existing address by ID — service validates the address belongs to this user
     @PutMapping("/addresses/{id}")
     public ResponseEntity<AddressResponse> updateAddress(
             @PathVariable Long id,
-            @Valid @RequestBody AddressRequest request
-    ) {
-
+            @Valid @RequestBody AddressRequest request) {
         Long userId = 1L;
-
-        AddressResponse response =
-                customerService.updateAddress(userId, id, request);
-
+        AddressResponse response = customerService.updateAddress(userId, id, request);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Deletes a customer address.
-     *
-     * Endpoint:
-     * DELETE /api/customers/addresses/{id}
-     *
-     * @param id address id
-     * @return success response
-     */
+    // Deletes an address by ID — service validates the address belongs to this user
     @DeleteMapping("/addresses/{id}")
-    public ResponseEntity<Void> deleteAddress(
-            @PathVariable Long id
-    ) {
-
+    public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
         Long userId = 1L;
-
         customerService.deleteAddress(userId, id);
-
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Sets an address as default.
-     *
-     * Endpoint:
-     * PUT /api/customers/addresses/{id}/default
-     *
-     * @param id address id
-     * @return success response
-     */
+    // Sets an address as the default delivery address — clears the default flag from all others
     @PutMapping("/addresses/{id}/default")
-    public ResponseEntity<Void> setDefaultAddress(
-            @PathVariable Long id
-    ) {
-
+    public ResponseEntity<Void> setDefaultAddress(@PathVariable Long id) {
         Long userId = 1L;
-
         customerService.setDefaultAddress(userId, id);
-
         return ResponseEntity.ok().build();
     }
 }

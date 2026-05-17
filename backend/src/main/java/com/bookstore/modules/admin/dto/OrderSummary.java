@@ -1,8 +1,10 @@
-// Manas: Module changed → modules/admin/dto/OrderSummary.java
-// What's changed: New file — admin needs a flat order view with user info embedded
-// so the frontend order list table doesn't need extra API calls to get user details
-
 package com.bookstore.modules.admin.dto;
+
+/*
+ * This is the response DTO for order summaries in the Admin module.
+ * It provides a flat view of an order with embedded user info so the admin order table
+ * doesn't need extra API calls to display who placed each order.
+ */
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,19 +20,23 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class OrderSummary {
 
+    // Unique ID of the order
     private Long orderId;
 
-    // Manas: Embedding user info directly — admin order table shows who placed the order
+    // User who placed the order — embedded directly to avoid extra API calls from the frontend
     private Long userId;
     private String userName;
     private String userEmail;
 
-    // Manas: status can be PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+    // Current order status — PENDING, CONFIRMED, SHIPPED, DELIVERED, or CANCELLED
     private String status;
 
+    // Total cost of the order
     private BigDecimal totalAmount;
+
+    // Timestamp of when the order was placed
     private LocalDateTime createdAt;
 
-    // Manas: itemCount tells admin how big the order is without sending the full item list
+    // Number of items in the order — gives a quick sense of order size without loading all items
     private int itemCount;
 }

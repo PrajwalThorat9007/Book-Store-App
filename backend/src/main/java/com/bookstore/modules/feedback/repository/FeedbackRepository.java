@@ -1,8 +1,11 @@
 package com.bookstore.modules.feedback.repository;
 
-// Manas: Module changed → modules/feedback/repository/FeedbackRepository.java
-// What's changed: Created FeedbackRepository with custom queries for
-//                 fetching reviews by product and calculating average rating.
+/*
+ * This is the repository interface for the Feedback module.
+ * It extends JpaRepository to get standard CRUD operations for free.
+ * Provides custom queries for fetching reviews by product or user,
+ * calculating average ratings, and checking review ownership.
+ */
 
 import com.bookstore.entity.Feedback;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,25 +19,22 @@ import java.util.Optional;
 @Repository
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 
-    // Manas: Get all feedback entries for a specific product (used in GET /api/feedback/product/{id})
+    // Returns all reviews for a specific product — used in the product detail page
     List<Feedback> findByProductId(Long productId);
 
-    // Manas: Check if a user has already reviewed a product
-    //        Used in service to enforce the "one review per user per product" business rule
-    //        (DB unique constraint is the hard stop, this gives a clean error message before hitting it)
+    // Checks if a user has already reviewed a product — enforces one review per user per product
     Optional<Feedback> findByUserIdAndProductId(Long userId, Long productId);
 
-    // Manas: Calculate the average rating for a product
-    //        Returns null if no reviews exist yet — service handles the null case
+    // Calculates the average rating for a product — returns null if no reviews exist yet
     @Query("SELECT AVG(f.rating) FROM Feedback f WHERE f.product.id = :productId")
     Double findAverageRatingByProductId(@Param("productId") Long productId);
 
-    // Manas: Count total number of reviews for a product
-    //        Used alongside average rating to build the RatingSummary DTO response
+    // Counts total reviews for a product — used alongside average rating in the RatingSummary response
     long countByProductId(Long productId);
 
-    // Manas: Check if a specific feedback entry belongs to a specific user
-    //        Used in PUT and DELETE to verify ownership before allowing edits/deletes
+    // Checks if a feedback entry belongs to a specific user — used for ownership validation in PUT/DELETE
     boolean existsByIdAndUserId(Long feedbackId, Long userId);
+
+    // Returns all reviews submitted by a specific user — used in the "My Reviews" profile page
     List<Feedback> findByUserId(Long userId);
 }

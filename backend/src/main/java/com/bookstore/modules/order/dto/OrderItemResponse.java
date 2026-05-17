@@ -1,26 +1,30 @@
-// Manas: Module changed → modules/order/dto
-// What's changed: New file. DTO for a single item inside an order response.
-//                 Includes subtotal (calculated, not stored in DB).
-
 package com.bookstore.modules.order.dto;
+
+/*
+ * This is the response DTO for a single item inside an order.
+ * It carries the product details and quantity for one line item.
+ * Subtotal is calculated on the fly — it is not stored in the database.
+ */
 
 import lombok.Data;
 import java.math.BigDecimal;
 
-/**
- * Response DTO for one item inside an Order.
- *
- * Manas: subtotal = unitPrice × quantity
- *        Calculated in OrderService.mapToOrderResponse()
- *        We never store subtotal in DB — always compute on the fly.
- */
 @Data
 public class OrderItemResponse {
 
+    // Unique ID of this order item record
     private Long id;
+
+    // ID and title of the product ordered
     private Long productId;
     private String productTitle;
+
+    // Number of units ordered
     private Integer quantity;
+
+    // Price per unit at the time of ordering — snapshot, not live product price
     private BigDecimal unitPrice;
-    private BigDecimal subtotal;  // unitPrice × quantity
+
+    // Calculated as unitPrice × quantity — computed in service, not stored in DB
+    private BigDecimal subtotal;
 }
