@@ -1,3 +1,3 @@
-package com.bookstore.controller;
+package com.bookstore.modules.product.controller;
 
-// TODO: Implement book controller
+// TODO: Implement product controller during Product module implementation

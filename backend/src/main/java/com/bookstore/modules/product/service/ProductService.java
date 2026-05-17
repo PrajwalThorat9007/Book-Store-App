@@ -1,3 +1,3 @@
-package com.bookstore.service;
+package com.bookstore.modules.product.service;
 
-// TODO: Implement book service
+// TODO: Implement product service interface during Product module implementation
